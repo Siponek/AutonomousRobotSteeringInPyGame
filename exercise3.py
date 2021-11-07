@@ -3,35 +3,6 @@ from __future__ import print_function
 import time
 from sr.robot import *
 
-"""
-Exercise 3 python script
-
-We start from the solution of the exercise 2
-Put the main code after the definition of the functions. The code should make the robot:
-	- 1) find and grab the closest silver marker (token)
-	- 2) move the marker on the right
-	- 3) find and grab the closest golden marker (token)
-	- 4) move the marker on the right
-	- 5) start again from 1
-
-The method see() of the class Robot returns an object whose attribute info.marker_type may be MARKER_TOKEN_GOLD or MARKER_TOKEN_SILVER,
-depending of the type of marker (golden or silver). 
-Modify the code of the exercise2 to make the robot:
-
-1- retrieve the distance and the angle of the closest silver marker. If no silver marker is detected, the robot should rotate in order to find a marker.
-2- drive the robot towards the marker and grab it
-3- move the marker forward and on the right (when done, you can use the method release() of the class Robot in order to release the marker)
-4- retrieve the distance and the angle of the closest golden marker. If no golden marker is detected, the robot should rotate in order to find a marker.
-5- drive the robot towards the marker and grab it
-6- move the marker forward and on the right (when done, you can use the method release() of the class Robot in order to release the marker)
-7- start again from 1
-
-	When done, run with:
-	$ python run.py exercise3.py
-
-"""
-
-
 a_th = 2.0
 """ float: Threshold for the control of the orientation"""
 
@@ -44,7 +15,7 @@ R = Robot()
 def drive(speed, seconds):
     """
     Function for setting a linear velocity
-    
+
     Args: speed (int): the speed of the wheels
 	  seconds (int): the time interval
     """
@@ -57,7 +28,7 @@ def drive(speed, seconds):
 def turn(speed, seconds):
     """
     Function for setting an angular velocity
-    
+
     Args: speed (int): the speed of the wheels
 	  seconds (int): the time interval
     """
@@ -85,24 +56,124 @@ def find_token():
     else:
    	return dist, rot_y
 
+def closestMarker(listOf):
 
-while 1:
-    dist, rot_y = find_token()  # we look for markers
-    if dist==-1:
-        print("I don't see any token!!")
-	exit()  # if no markers are detected, the program ends
-    elif dist <d_th: 
-        print("Found it!")
-        R.grab() # if we are close to the token, we grab it.
-        print("Gotcha!") 
-        exit()
-    elif -a_th<= rot_y <= a_th: # if the robot is well aligned with the token, we go forward
-        print("Ah, here we are!.")
-        drive(10, 0.5)
-    elif rot_y < -a_th: # if the robot is not well aligned with the token, we move it on the left or on the right
-        print("Left a bit...")
-        turn(-2, 0.5)
-    elif rot_y > a_th:
-        print("Right a bit...")
-        turn(+2, 0.5)
+    res = min(listOf, key=lambda x: x.dist)
+    return res
 
+def driveToMarker(marker,d_th,a_th):
+	dist, rot_y = marker.dist, marker.rot_y
+	if dist	==	(-1):
+		print("I can't see shit...I am gonna turn")
+		turn(1,1)
+		return False
+
+		# if no markers are detected, the program ends
+	elif dist <	d_th:
+		print("Found it!")
+		R.grab() # if we are close to the token, we grab it.
+		print("Gotcha!")
+		time.sleep(1)
+		print("something is no yes?")
+		turn(60,1)
+		R.release()
+		turn(-60,1)
+		return True
+	elif -a_th<= rot_y <= a_th: # if the robot is well aligned with the token, we go forward
+		print("Ah, here we are!.")
+		drive(50, 0.1)
+		return False
+
+	elif rot_y < -a_th: # if the robot is not well aligned with the token, we move it on the left or on the right
+		print("Left a bit...")
+		turn(-6, 0.3)
+		return False
+
+	elif rot_y > a_th:
+		print("Right a bit...")
+		turn(+6, 0.3)
+		return False
+
+def markersNotDone(silverList,doneTokens):
+	silverNotDone = []
+	for silverToken in silverList:
+		add = True
+		for doneToken in doneTokens:
+			if doneToken.info.offset == silverToken.info.offset:
+				add = False
+				break
+		if add:
+			silverNotDone.append(silverToken)
+	return silverNotDone
+
+
+def vision():
+	silverList = []
+	goldList = []
+	for token in R.see():
+	    if token.info.marker_type == MARKER_TOKEN_SILVER:
+	        silverList.append(token)
+	    elif token.info.marker_type == MARKER_TOKEN_GOLD:
+	        goldList.append(token)
+		while token.dist == -1:
+			turn(1,1)
+			R.see()
+	return silverList, goldList
+
+
+
+markers = R.see()
+print ("I can see", len(markers), "markers:")
+
+for m in markers:
+    if m.info.marker_type in (MARKER_TOKEN_GOLD, MARKER_TOKEN_SILVER):
+        print (" - Token {0} is {1} metres away, type : {2}".format( m.info.offset, m.dist, m.info.marker_type ))
+    elif m.info.marker_type == MARKER_ARENA:
+        print (" - Arena marker {0} is {1} metres away".format( m.info.offset, m.dist ))
+
+
+doneTokens = []
+
+while(1):
+	print("going for SILVER token")
+
+	while 1:
+		silverList,goldList = vision()
+
+		silverNotDone = markersNotDone(silverList,doneTokens)
+
+
+		if len(silverNotDone) == 0:
+			closestSilver = min(silverList, key=lambda x: x.dist)
+		else:
+			closestSilver = min(silverNotDone, key=lambda x: x.dist)
+
+		closestGold = min(goldList, key=lambda x: x.dist)
+		print("rot_y :",closestGold.rot_y)
+		print("dist :",closestGold.dist)
+		if closestGold.dist < 0.7:
+			print("ZARA PIERDOLNE\n")
+			diffRot = 90 - abs(closestGold.rot_y)
+			print(diffRot)
+			if closestGold.rot_y < 0:
+				turn(diffRot,0.8)
+			elif closestGold.rot_y >= 0:
+
+				turn(-diffRot,0.8)
+			elif closestGold.rot_y >= 150:
+				turn(30,1)
+			elif closestGold.rot_y <= -150:
+				turn(-30,1)
+
+
+
+			drive(40,0.1)
+
+
+		# driveToMarker(res, d_th, a_th)		# going to closes marker
+
+		if closestSilver.dist < 3 and driveToMarker(closestSilver, d_th, a_th) == True: #CATCHED THE MARKER
+			doneTokens.append(closestSilver)
+			break
+		else:
+			drive(30,0.5)
