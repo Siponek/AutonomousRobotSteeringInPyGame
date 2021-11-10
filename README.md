@@ -13,7 +13,12 @@ First assignment for Research Track 1
 ---
 The simulator requires a Python 2.7 installation, the pygame library, PyPyBox2D, and PyYAML.
 
-
+**How to run**
+---
+Type in console:
+```
+python2 run.py finalAssignment.py
+```
 **Description**
 --
 Tasks for the robot:
@@ -23,7 +28,8 @@ Tasks for the robot:
 
 Due to a bug of the arena it was not possible to run the robot with creating a map for the its movement. Sort of "reactive" behaviour was invented as the robot either must almost bump into gold markers at 90 deg and then using pre-destined instructions turn left or right OR scan for distance of the markers on both sides and turn where the distance is longer.
 
-In this implementation the second version was used. Robot constantly scans the area in certain radius in from of him and on the sides. Since 
+In this implementation the second version was used. Robot constantly scans the area in certain radius in from of him and on the sides.
+The most important aspect of this implementation is to turn and move at the same time since only by that it is possible to move out the robot out of "close zone" to the golden markers.
 
 
 **Pseudocode**
