@@ -48,7 +48,7 @@ def turnMove(speed, direction):
 
 		R.motors[0].m0.power = speed/4
 		R.motors[0].m1.power = speed
-	time.sleep(0.1)
+	time.sleep(0.01)
 
 def find_token():
 	"""
@@ -85,11 +85,12 @@ def driveToMarker(d_th,a_th):
 			print("Grabbing.")
 			print("Truning..")
 			turn(60,1)
-			R.release()
-			print("Releasing...")
-			turn(-60,1)
-			# drive(60,0.5)
-			break
+			if R.release() == True:
+
+				print("Releasing...")
+				turn(-60,1)
+				# drive(60,0.5)
+				break
 		elif -a_th<= rot_y <= a_th: # if the robot is well aligned with the token, we go forward
 			print("The robot is well aligned with the token, we go forward.")
 			drive(50, 0.1)
@@ -101,6 +102,7 @@ def driveToMarker(d_th,a_th):
 		elif rot_y > a_th:
 			print("Right a bit...")
 			turn(+10, 0.1)
+
 # def markersNotDone(silverList,doneTokens):
 # 	silverNotDone = []
 # 	for silverToken in silverList:
@@ -112,6 +114,7 @@ def driveToMarker(d_th,a_th):
 # 		if add:
 # 			silverNotDone.append(silverToken)
 # 	return silverNotDone
+
 def vision():
 	silverList = []
 	goldList = []
@@ -125,54 +128,53 @@ def vision():
 			R.see()
 	return silverList, goldList
 
+def scanSurroundings(coneAngle1,coneAngle2):
+	markers = R.see()
+	scanGoldRight = []
+	scanGoldLeft = []
+	for x in markers: #scanning for markers on right side
+		if x.dist <= 2 and x.rot_y >= coneAngle1 and x.rot_y <= coneAngle2 :
+			scanGoldRight.append(x.dist)
+	for x in markers: #scanning for markers on left side
+		if x.dist <= 2 and x.rot_y <= -coneAngle1 and x.rot_y >= -coneAngle2 :
+			scanGoldLeft.append(x.dist)
+	return scanGoldLeft, scanGoldRight
 
+def main():
+	while(1):
+		print("--- going for SILVER token ---")
+		while 1:
+			silverList,goldList = vision()
+			closestSilver = min(silverList, key=lambda x: x.dist)
+			closestGold = min(goldList, key=lambda x: x.dist)
 
-while(1):
-	print("--- going for SILVER token ---")
-	while 1:
-		silverList,goldList = vision()
-		closestSilver = min(silverList, key=lambda x: x.dist)
-		closestGold = min(goldList, key=lambda x: x.dist)
+			meanRight = 100
+			meanLeft = 100
+			scanGoldLeft, scanGoldRight = scanSurroundings(0,100)
 
-		scanGoldLeft = []
-		scanGoldRight = []
-		coneAngle1 = 0
-		coneAngle2 = 100
+			if len(scanGoldRight) != 0:
+				meanRight = sum(scanGoldRight)/len(scanGoldRight)
+			if len(scanGoldLeft) != 0:
+				meanLeft = sum(scanGoldLeft)/len(scanGoldLeft)
+				
+			silverList = filter(lambda x: abs(x.rot_y)<120, silverList)
+			closestSilver = min(silverList, key=lambda x: x.dist)
 
+			if closestSilver.dist < 2*d_th: #CATCHED THE MARKER
+				print("Driving to silver marker...")
+				driveToMarker(d_th, a_th)
 
-		markers = R.see()
-		for x in markers: #scanning for markers on right side
-			if x.dist <= 2 and x.rot_y >= coneAngle1 and x.rot_y <= coneAngle2 :
-				scanGoldRight.append(x.dist)
-		for x in markers: #scanning for markers on left side
-			if x.dist <= 2 and x.rot_y <= -coneAngle1 and x.rot_y >= -coneAngle2 :
-				scanGoldLeft.append(x.dist)
-
-		meanRight = 100
-		meanLeft = 100
-
-		if len(scanGoldRight) != 0:
-			meanRight = sum(scanGoldRight)/len(scanGoldRight)
-		if len(scanGoldLeft) != 0:
-			meanLeft = sum(scanGoldLeft)/len(scanGoldLeft)
-
-		silverList,_ = vision()
-		silverList = filter(lambda x: abs(x.rot_y)<120, silverList)
-		closestSilver = min(silverList, key=lambda x: x.dist)
-		if closestSilver.dist < 2*d_th: #CATCHED THE MARKER
-			print("Driving to silver marker...")
-			driveToMarker(d_th, a_th)
-
-		elif meanLeft > meanRight:
-			if min(scanGoldRight)>1.5:
-				turnMove(25, "LEFT")
+			elif meanLeft > meanRight:
+				if min(scanGoldRight)>1.5:
+					turnMove(25, "LEFT")
+				else:
+					turnMove(100, "LEFT")
 			else:
-				turnMove(100, "LEFT")
-		else:
-			if min(scanGoldLeft)>1.5:
+				if min(scanGoldLeft)>1.5:
 
-				turnMove(25,"RIGHT")
-			else:
-				turnMove(100,"RIGHT")
-
-		drive(100,0.1)
+					turnMove(25,"RIGHT")
+				else:
+					turnMove(100,"RIGHT")
+			print("FORWARD")
+			drive(100,0.009)
+main()
