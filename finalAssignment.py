@@ -75,7 +75,7 @@ def driveToMarker(d_th,a_th):
 		closestSilver = min(silverList, key=lambda x: x.dist)
 		dist, rot_y = closestSilver.dist, closestSilver.rot_y
 		if dist	==	(-1):
-			print("I can't see shit...I am gonna turn")
+			print("I can't see *anything*...I am gonna turn")
 			turn(1,1)
 
 			# if no markers are detected, the program ends
