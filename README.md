@@ -1,7 +1,7 @@
 Python Robot Drunk Driver
 ================================
 
-Research Track 1, Assignment 1 <br>
+Research Track for Robot Rngineering<br>
 Author Szymon Zinkowicz
 
 **Introduction**
